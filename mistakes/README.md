@@ -69,5 +69,12 @@ No team was found skipping a gate on purpose. Gates were passed by accident, whi
 
 - **What happened** (16 Nov). The site template's `hub.json` set `"version_from": "/version.json"`, a relative path. The hub's registry gate requires the absolute address (`AgentiCCells__Site__Hub` `build/validate.js` line 124: `version_from` must equal `live_address` + `/version.json`), so the hub refused every seeded site's `hub.json` when it was copied in. Reported to this agent by conductor@web-summit.dinis at 18:10 UTC.
 - **Why.** Two gates disagreed: the template's validator only required `version_from` to be a non-empty string, the hub's required the absolute address. The mismatch showed up only when a second repository read the file.
-- **Fix.** This repository: `hub.json` corrected, and `scripts/validate.mjs` now applies the hub's rule, with a gate test. Proposed for the template in the [template review](../reviews/2026-11-16__AgentiCCells__AgentiCCells__Site__Template.md), finding 11.
+- **Fix.** This repository: `hub.json` corrected, and `scripts/validate.mjs` now applies the hub's rule, with a gate test. Template default fixed on Dinis's word in AgentiCCells__Site__Template f7438ad (18:19 UTC); the template's validator does not yet check it ([template review](../reviews/2026-11-16__AgentiCCells__AgentiCCells__Site__Template.md), finding 11).
 - **Rule.** When another repository consumes your file, check it in your gate with the consumer's rule, so it fails where it is written and not where it is read. A template default is copied into every site, so it gets the same review as code.
+
+## 10. An `Agent:` line one paragraph too early
+
+- **What happened** (16 Nov, 18:19 UTC). The template commit f7438ad put `Agent: conductor.web-summit@AgentiCCells.dinis` in its own paragraph, followed by a blank line and then the `Co-Authored-By:` and `Claude-Session:` lines. Git reads trailers from the final paragraph only, so `%(trailers:key=Agent)` found nothing and the commit check failed. Reported by conductor@web-summit.dinis; read in the commit on 16 Nov.
+- **Why it hurts.** The commit is already on `dev`. The check cannot be satisfied after the fact without rewriting history, which is forbidden (ACC-015), so the commit stays unchecked for good. The same trap produced ACC-015 itself on 15 Nov.
+- **Rule.** All trailers in one final block, no blank line between them: `Agent:`, `Co-Authored-By:`, `Claude-Session:`. Run the commit check before the push (this repository's `release.sh` does), so the mistake is fixed with `git commit --amend` while it is still local.
+- **Test.** `scripts/test-gates.mjs` has a case for an `Agent:` line outside the final block.

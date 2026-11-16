@@ -6,6 +6,16 @@
 - Asked by: nobody. This is an **unasked example**, written as a proposal. It has not been sent to the factory team, and nothing was pushed to their repository. Dinis decides whether it goes to them.
 - Scope: release flow, gates, CI workflow, tests.
 
+## Status of the findings (updated 2026-11-16, 18:25 UTC)
+
+On Dinis's word (about 18:15 UTC, relayed by conductor@web-summit.dinis: "we definitely should allow dots because that's our terminology. So change that rule. We can't use dashes. Fix the template directly."), conductor.web-summit@ changed the template in [f7438ad](https://github.com/AgentiCCells/AgentiCCells__Site__Template/commit/f7438ad), read by this agent at 18:22 UTC:
+
+| Finding | Status in the template |
+|---|---|
+| 2. Dotted roles | **Fixed** in f7438ad. The rule is stricter than this agent's first version (it also refuses a trailing or doubled dash); this repository now uses the template's rule exactly. |
+| 11. Relative `version_from` | **Half fixed** in f7438ad: the default is now the full address. The validator still accepts any non-empty string, so a site can drift back without a failure; adding the hub's rule to `validate.mjs` is still proposed. |
+| 1, 3, 3b, 3c, 4 to 10 | Open. `release.sh` line 11 still chains the gates with `&&`. |
+
 ## Verdict
 
 **Release after the must-fix items.** The design is good (CI owns the version, gates run both locally and in CI, a narrow leak scan, a commit check). Two defects let a commit that fails a gate reach `dev`, one lets a push skip the commit check, one blocks agents with dotted names, and the hold is not enforced. Because the factory seeds every new site from this template, each fix here fixes every future site.
@@ -22,12 +32,12 @@
 - Principle: [a gate that can be passed by accident is not a gate](../guidance/README.md#gates).
 - Fix: run each gate as its own command (a function works; `set -e` applies inside it when it is called as a simple command). See the patch below. Never `a && b && c` for gates, never pipe a gate.
 
-### 2. Must fix: the commit check rejects agent names with a dot in the role
+### 2. Fixed in f7438ad: the commit check rejected agent names with a dot in the role
 
 - Where: `scripts/check-commits.mjs`, the line `const agentShape = /^[a-z0-9][a-z0-9-]*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;`
 - What is wrong: the role part allows no dot, but agents are named with dots (`specialist.code@AgentiCCells.dinis`, given by Dinis on 16 Nov; the dotted dev workers across the teams).
 - Scenario: the first commit of this repository's own agent failed the check locally with "Agent: trailer is not role@agenticcells.person (specialist.code@AgentiCCells.dinis)". In CI this fails every push from such an agent, and the tempting fix is to rename the agent or skip the check.
-- Fix: allow single dots between characters in the role: `/^[a-z0-9](?:[a-z0-9-]|\.(?=[a-z0-9]))*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i`. It still rejects a leading dot, a trailing dot, two dots in a row, spaces and other domains (tested).
+- Fix (as applied in f7438ad): `/^[a-z0-9]+(?:[.-][a-z0-9]+)*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i`: parts of letters and digits joined by single dots or dashes. This agent's first proposal also allowed a trailing or doubled dash; the template's rule is better and is now used here.
 
 ### 3. Must fix: nothing enforces `board/HOLD.md`
 
@@ -84,7 +94,7 @@
 
 - `concurrency: { group: pages, cancel-in-progress: false }` is right for deploys: one run at a time, and GitHub keeps only the newest pending run, so a burst of pushes does not queue dozens of deploys. Keep it. Every push to `dev` runs the full workflow, including documentation-only pushes; that is acceptable for a small static site and gives each push a version. If a site gets many agents pushing, batch their work into fewer pushes rather than adding `paths-ignore`, so the version still matches what was deployed.
 
-### 11. Must fix: `hub.json` ships a relative `version_from` that the hub refuses
+### 11. Half fixed in f7438ad: `hub.json` shipped a relative `version_from` that the hub refuses
 
 - Where: `hub.json` (`"version_from": "/version.json"`) and `scripts/validate.mjs` (which accepts any non-empty string).
 - What is wrong: AgentiCCells__Site__Hub `build/validate.js:124` requires `version_from` to equal `live_address` + `/version.json`. Every seeded site inherits the relative value and is refused when the hub copies its `hub.json`. Reported by conductor@web-summit.dinis on 16 Nov, 18:10 UTC; checked against the hub's code.
@@ -137,7 +147,7 @@ echo "release failed after 5 attempts" >&2; exit 1
 
 ```diff
 -const agentShape = /^[a-z0-9][a-z0-9-]*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
-+const agentShape = /^[a-z0-9](?:[a-z0-9-]|\.(?=[a-z0-9]))*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
++const agentShape = /^[a-z0-9]+(?:[.-][a-z0-9]+)*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
 ```
 
 `.github/workflows/pages.yml` (findings 3, 3b, 3c): see this repository's [pages.yml](https://github.com/AgentiCCells/AgentiCCells__Specialist__Code/blob/dev/.github/workflows/pages.yml). The hold check, as the first step of the `build` job after checkout:

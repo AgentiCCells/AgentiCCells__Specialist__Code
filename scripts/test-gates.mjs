@@ -48,6 +48,16 @@ const cases = [
     appendFileSync(join(d, 'README.md'), '\nx\n'); gitc(d, 'commit', '-qam', 'ok\n\nAgent: specialist.code@AgentiCCells.dinis');
     return run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status;
   }],
+  ['trailing dash in an agent role fails the commit check', 1, (d) => {
+    const base = gitc(d, 'rev-parse', 'HEAD').trim();
+    appendFileSync(join(d, 'README.md'), '\nx\n'); gitc(d, 'commit', '-qam', 'bad\n\nAgent: dev-@AgentiCCells.dinis');
+    return run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status;
+  }],
+  ['Agent line outside the final trailer block fails the commit check', 1, (d) => {
+    const base = gitc(d, 'rev-parse', 'HEAD').trim();
+    appendFileSync(join(d, 'README.md'), '\nx\n'); gitc(d, 'commit', '-qam', 'msg\n\nAgent: dev@AgentiCCells.dinis\n\nCo-Authored-By: x <x@x>');
+    return run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status;
+  }],
   ['release.sh refuses during a hold', 1, (d) => {
     execFileSync('mkdir', ['-p', join(d, 'board')]); writeFileSync(join(d, 'board/HOLD.md'), 'hold\n');
     return run(d, 'bash', ['scripts/release.sh']).status;
