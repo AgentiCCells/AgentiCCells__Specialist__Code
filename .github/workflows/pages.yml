@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: No release during a hold
         run: if [ -e board/HOLD.md ]; then echo "board/HOLD.md exists" >&2; exit 1; fi
       - id: version
@@ -40,11 +41,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Every pushed commit carries an Agent trailer
+      - name: Every commit since the last release carries an Agent trailer
+        # specialist.code@ (2026-11-16): check from the last release tag, not from
+        # github.event.before. GitHub drops a pending run when a newer one queues, and the
+        # surviving run's "before" is the dropped push's head, so the dropped push's commits
+        # were never checked. With no tag yet, fall back to the pushed range.
         env:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
-        run: node scripts/check-commits.mjs "$BEFORE" "$AFTER"
+        run: |
+          last=$(git describe --tags --abbrev=0 --match "v${VERSION_BASE}.*" "$AFTER" 2>/dev/null || true)
+          node scripts/check-commits.mjs "${last:-$BEFORE}" "$AFTER"
+      - name: The gates fail when they should
+        run: node scripts/test-gates.mjs
       - run: node scripts/build.mjs
         env:
           SITE_VERSION: ${{ steps.version.outputs.version }}

@@ -8,7 +8,7 @@
 
 ## Verdict
 
-**Release after the must-fix items.** The design is good (CI owns the version, gates run both locally and in CI, a narrow leak scan, a commit check). Two defects let a commit that fails a gate reach `dev`, and one blocks agents with dotted names. Because the factory seeds every new site from this template, each fix here fixes every future site.
+**Release after the must-fix items.** The design is good (CI owns the version, gates run both locally and in CI, a narrow leak scan, a commit check). Two defects let a commit that fails a gate reach `dev`, one lets a push skip the commit check, one blocks agents with dotted names, and the hold is not enforced. Because the factory seeds every new site from this template, each fix here fixes every future site.
 
 ## Findings
 
@@ -34,6 +34,18 @@
 - Where: `scripts/release.sh`, `.github/workflows/pages.yml`.
 - What is wrong: `CLAUDE.md` says never to work while `board/HOLD.md` exists, but neither the release script nor CI checks for it. A hold depends on every agent remembering it.
 - Fix: `release.sh` refuses to run while the file exists (patch below); the workflow's build job fails early with the same test, so a push made some other way does not deploy during a hold.
+
+### 3b. Must fix: a dropped CI run leaves a push's commits unchecked
+
+- Where: `.github/workflows/pages.yml:40-45` (`check-commits.mjs "$BEFORE" "$AFTER"` with `BEFORE: ${{ github.event.before }}`) together with `concurrency: { group: pages, cancel-in-progress: false }`.
+- What is wrong: GitHub keeps one running and one pending run per group; a newer pending run cancels the older pending one. With three quick pushes A, B, C, the run for B is dropped, and C's run checks only `B..C`. B's commits are never checked for an `Agent:` trailer. (Found by reading the workflow and GitHub's documented concurrency behaviour, not reproduced on GitHub.)
+- Fix: check from the last release tag, which only a successful run creates: `last=$(git describe --tags --abbrev=0 --match "v${VERSION_BASE}.*" "$AFTER" || true)`, then `check-commits.mjs "${last:-$BEFORE}" "$AFTER"`. Now in this repository's `pages.yml`.
+
+### 3c. Should fix: the build job keeps the push credential in the checkout
+
+- Where: `.github/workflows/pages.yml:25` (`actions/checkout@v4` without `persist-credentials: false`). AgentiCCells__Website has it (its `pages.yml` line 24); the template dropped it.
+- What is wrong: the build job runs repository code (`build.mjs`, `validate.mjs`) with the token left in `.git/config`. Its permission is `contents: read`, so the harm is small today, but it grows with any later permission.
+- Fix: `persist-credentials: false` on the build job's checkout. The tag job, which pushes, keeps its own checkout.
 
 ### 4. Should fix: the gates check the working tree, but the push sends `HEAD`
 
@@ -79,6 +91,11 @@
 - **The commit check reads trailers the way git does** (`%(trailers:key=Agent,valueonly)`), skips history older than the check instead of rewriting it, and handles a forced push or manual run with no usable `before`.
 - **Template mode** (`.factory-template`): the template builds and checks but never deploys, and a seeded site fails if any `__SITE_*__` placeholder is left.
 
+## Context
+
+- ACC-012 (AgentiCCells__Website `board/`): Dinis, 15 Nov: "Branch protection, no, everybody can push to dev." So the gates on `dev` are the only barrier there, which is why findings 1, 3, 3b and 5 matter.
+- Boundaries with sibling specialists: the leak scan's patterns belong to security@ and the word list of the wording check to the Writing specialist; this review only asks that both run, unpiped, locally and in CI.
+
 ## Proposed patch
 
 `scripts/release.sh` (findings 1, 3, 4, 5). This is the version now running in AgentiCCells__Specialist__Code, tested on 2026-11-16 against a local bare remote: a commit that passes before the rebase and fails the validator after it is refused, and the remote is unchanged.
@@ -117,7 +134,7 @@ echo "release failed after 5 attempts" >&2; exit 1
 +const agentShape = /^[a-z0-9](?:[a-z0-9-]|\.(?=[a-z0-9]))*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
 ```
 
-`.github/workflows/pages.yml` (finding 3), as the first step of the `build` job after checkout:
+`.github/workflows/pages.yml` (findings 3, 3b, 3c): see this repository's [pages.yml](https://github.com/AgentiCCells/AgentiCCells__Specialist__Code/blob/dev/.github/workflows/pages.yml). The hold check, as the first step of the `build` job after checkout:
 
 ```yaml
       - name: No release during a hold

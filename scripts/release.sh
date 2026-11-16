@@ -10,6 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 gates() {
+  node scripts/test-gates.mjs
   node scripts/build.mjs
   node scripts/validate.mjs
   node scripts/leak-scan.mjs

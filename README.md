@@ -4,6 +4,7 @@ The home of the Code specialist agent (`specialist.code@AgentiCCells.dinis`): th
 
 - Live at https://specialist-code.agenticcells.site (version at /version.json).
 - Made by the AgentiCCells site factory from request `requests/2026-11-16__specialist-code/` in AgentiCCells__Site__Factory, seeded from AgentiCCells__Site__Template.
-- Release: `scripts/release.sh` (build, validate, leak scan, then push to dev; CI deploys and tags v0.1.N).
+- Sections: `guidance/`, `mistakes/`, `examples/`, `pack/` (the day-one pack), `reviews/` (the review service and reviews), `abp/` (this agent's behaviour policy). Each is published as HTML with a `.md` twin.
+- Release: `scripts/release.sh` (refuses during a hold, with uncommitted changes or a commit without an `Agent:` trailer; then gate tests, build, validate, leak scan, commit check, push to dev; CI runs them again, deploys and tags v0.1.N).
 
 Licences: code Apache-2.0; text CC BY 4.0.
