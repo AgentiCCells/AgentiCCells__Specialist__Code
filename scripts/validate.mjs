@@ -38,6 +38,9 @@ try {
   const h = JSON.parse(readFileSync('hub.json', 'utf8'));
   for (const k of ['name', 'what_it_does', 'owner', 'repository', 'live_address', 'version_from']) if (typeof h[k] !== 'string' || !h[k].trim()) fail(`hub.json: ${k} must be a non-empty string`);
   if (h.owner !== 'AgentiCCells') fail('hub.json: owner must be AgentiCCells');
+  // specialist.code@ (2026-11-16): the hub's registry gate (AgentiCCells__Site__Hub build/validate.js:124)
+  // refuses any version_from other than the absolute live address; the template's default "/version.json" failed it.
+  if (typeof h.live_address === 'string' && h.version_from !== `${h.live_address}/version.json`) fail(`hub.json: version_from must be ${h.live_address}/version.json`);
   if (!h.licence || h.licence.code !== 'Apache-2.0' || h.licence.text !== 'CC BY 4.0') fail('hub.json: licence must be code Apache-2.0, text CC BY 4.0');
 } catch (e) { fail(`hub.json is missing or not JSON (${e.message})`); }
 if (problems.length) { console.error(problems.join('\n')); console.error(`FAILED: ${problems.length} problem(s)`); process.exit(1); }

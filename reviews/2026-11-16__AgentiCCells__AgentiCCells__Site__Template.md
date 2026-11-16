@@ -84,6 +84,12 @@
 
 - `concurrency: { group: pages, cancel-in-progress: false }` is right for deploys: one run at a time, and GitHub keeps only the newest pending run, so a burst of pushes does not queue dozens of deploys. Keep it. Every push to `dev` runs the full workflow, including documentation-only pushes; that is acceptable for a small static site and gives each push a version. If a site gets many agents pushing, batch their work into fewer pushes rather than adding `paths-ignore`, so the version still matches what was deployed.
 
+### 11. Must fix: `hub.json` ships a relative `version_from` that the hub refuses
+
+- Where: `hub.json` (`"version_from": "/version.json"`) and `scripts/validate.mjs` (which accepts any non-empty string).
+- What is wrong: AgentiCCells__Site__Hub `build/validate.js:124` requires `version_from` to equal `live_address` + `/version.json`. Every seeded site inherits the relative value and is refused when the hub copies its `hub.json`. Reported by conductor@web-summit.dinis on 16 Nov, 18:10 UTC; checked against the hub's code.
+- Fix: have the factory write `version_from` from the site's live address when it seeds the site, as it does for `live_address`, and add the hub's rule to `validate.mjs`: `if (h.version_from !== `${h.live_address}/version.json`) fail(...)`. Done in this repository, with a gate test.
+
 ## What is good, and worth copying
 
 - **CI owns the version**: `VERSION_BASE` is set by a person, the patch number only by the workflow from the tags, and the tag is made only after a successful deploy (`pages.yml`, jobs `build` and `tag`). Local builds say `dev`. Listed in [examples](../examples/README.md).

@@ -64,3 +64,10 @@ No team was found skipping a gate on purpose. Gates were passed by accident, whi
 - **A pull request cancelled its own release** (newsroom.sgit.ai, v0.13.0): the PR's checks shared the release's concurrency group. Fix: PRs in their own group (4b2fbea6d, v0.13.1).
 - **A slow checkout made the gate 14 times slower in CI** (Web Summit, 10 Nov): `filter: blob:none` plus `git blame` in one data script caused 316 lazy blob fetches; the gate took 110 s in CI against 7.8 s locally, and releases queued behind each other (median 3 min 56 s, p90 7 min 42 s). The one-line fix was measured and, as of 16 Nov, not applied. Source: `team/incidents/PIPELINE.md` in SGit-AI__Website__Web-Summit.
 - **Rule.** A gate gives the same answer for the same tree at any time and on any machine. Inject the clock; give PRs their own concurrency group; measure the gate in CI, not only locally.
+
+## 9. A template default every site inherits, refused by the hub
+
+- **What happened** (16 Nov). The site template's `hub.json` set `"version_from": "/version.json"`, a relative path. The hub's registry gate requires the absolute address (`AgentiCCells__Site__Hub` `build/validate.js` line 124: `version_from` must equal `live_address` + `/version.json`), so the hub refused every seeded site's `hub.json` when it was copied in. Reported to this agent by conductor@web-summit.dinis at 18:10 UTC.
+- **Why.** Two gates disagreed: the template's validator only required `version_from` to be a non-empty string, the hub's required the absolute address. The mismatch showed up only when a second repository read the file.
+- **Fix.** This repository: `hub.json` corrected, and `scripts/validate.mjs` now applies the hub's rule, with a gate test. Proposed for the template in the [template review](../reviews/2026-11-16__AgentiCCells__AgentiCCells__Site__Template.md), finding 11.
+- **Rule.** When another repository consumes your file, check it in your gate with the consumer's rule, so it fails where it is written and not where it is read. A template default is copied into every site, so it gets the same review as code.

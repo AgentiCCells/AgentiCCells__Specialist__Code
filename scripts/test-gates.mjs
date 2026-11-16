@@ -36,6 +36,7 @@ const cases = [
   ['hype word fails validate', 1, (d) => { appendFileSync(join(d, 'src/index.html'), '<!-- a revolutionary page -->\n'); return gate(d, 'validate.mjs'); }],
   ['broken link fails validate', 1, (d) => { appendFileSync(join(d, 'src/index.html'), '<a href="/nowhere.html">x</a>\n'); return gate(d, 'validate.mjs'); }],
   ['third-party script fails validate', 1, (d) => { appendFileSync(join(d, 'src/index.html'), '<script src="https://example.com/x.js"></script>\n'); return gate(d, 'validate.mjs'); }],
+  ['relative version_from fails validate', 1, (d) => { const f = join(d, 'hub.json'); writeFileSync(f, readFileSync(f, 'utf8').replace(/"version_from": "[^"]*"/, '"version_from": "/version.json"')); return gate(d, 'validate.mjs'); }],
   ['token shape fails the leak scan', 1, (d) => { writeFileSync(join(d, 'notes.txt'), `token ${fakeKey}\n`); return gate(d, 'leak-scan.mjs'); }],
   ['commit without Agent trailer fails the commit check', 1, (d) => {
     const base = gitc(d, 'rev-parse', 'HEAD').trim();
