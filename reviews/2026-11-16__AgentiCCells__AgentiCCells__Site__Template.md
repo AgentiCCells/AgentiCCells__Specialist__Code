@@ -6,15 +6,19 @@
 - Asked by: nobody. This is an **unasked example**, written as a proposal. It has not been sent to the factory team, and nothing was pushed to their repository. Dinis decides whether it goes to them.
 - Scope: release flow, gates, CI workflow, tests.
 
-## Status of the findings (updated 2026-11-16, 18:25 UTC)
+## Status of the findings (updated 2026-11-16, 18:40 UTC)
 
-On Dinis's word (about 18:15 UTC, relayed by conductor@web-summit.dinis: "we definitely should allow dots because that's our terminology. So change that rule. We can't use dashes. Fix the template directly."), conductor.web-summit@ changed the template in [f7438ad](https://github.com/AgentiCCells/AgentiCCells__Site__Template/commit/f7438ad), read by this agent at 18:22 UTC:
+On Dinis's word (about 18:15 UTC, relayed by conductor@web-summit.dinis: "we definitely should allow dots because that's our terminology. So change that rule. We can't use dashes. Fix the template directly."), conductor.web-summit@ changed the template. Each commit below was read by this agent before being marked.
 
 | Finding | Status in the template |
 |---|---|
-| 2. Dotted roles | **Fixed** in f7438ad. The rule is stricter than this agent's first version (it also refuses a trailing or doubled dash); this repository now uses the template's rule exactly. |
-| 11. Relative `version_from` | **Half fixed** in f7438ad: the default is now the full address. The validator still accepts any non-empty string, so a site can drift back without a failure; adding the hub's rule to `validate.mjs` is still proposed. |
-| 1, 3, 3b, 3c, 4 to 10 | Open. `release.sh` line 11 still chains the gates with `&&`. |
+| 1. `release.sh` pushes after a failed gate | **Fixed** in [104760a](https://github.com/AgentiCCells/AgentiCCells__Site__Template/commit/104760a) (one gate per line) |
+| 2. Dotted roles | **Fixed** in [f7438ad](https://github.com/AgentiCCells/AgentiCCells__Site__Template/commit/f7438ad), with a stricter rule than this agent first proposed; this repository now uses the template's rule |
+| 11. Relative `version_from` | **Fixed**: default in f7438ad, validator check in 104760a |
+| 3 (hold), 3b (dropped run unchecked), 3c (`persist-credentials`), 4 (dirty tree), 5 (commit check before push) | **Patch ready**, tested against 104760a: [the patch](https://github.com/AgentiCCells/AgentiCCells__Specialist__Code/blob/dev/reviews/patches/2026-11-16__AgentiCCells__Site__Template__findings-3-3b-3c-4-5.patch). Sent to conductor@web-summit.dinis, to apply at Dinis's word. |
+| 6 to 10 | Open (signatures need published keys; wording scope; SHA pinning; gate tests; CI cost note) |
+
+About 3b: checking from the last release tag means one commit that fails the check would block every later release, because tags come only from green runs and history is never rewritten. The patch therefore also lets a person exempt exactly one commit in `scripts/commit-exemptions.json` (full SHA, reason, approver, date), the same shape as the leak scan's narrow allowlist. Applying it now is safe: tag v0.1.4 sits on 104760a, after f7438ad (whose `Agent:` line is unreadable), so no exemption is needed today. Tested: without an exemption the range from `f7438ad^` fails; with one it passes; a short SHA is refused.
 
 ## Verdict
 

@@ -1,0 +1,110 @@
+diff --git a/.github/workflows/pages.yml b/.github/workflows/pages.yml
+index 635daaf..ca614f7 100644
+--- a/.github/workflows/pages.yml
++++ b/.github/workflows/pages.yml
+@@ -25,6 +25,9 @@ jobs:
+       - uses: actions/checkout@v4
+         with:
+           fetch-depth: 0
++          persist-credentials: false
++      - name: No release during a hold
++        run: if [ -e board/HOLD.md ]; then echo "board/HOLD.md exists" >&2; exit 1; fi
+       - id: version
+         name: Work out the next version from the tags
+         run: |
+@@ -38,11 +41,16 @@ jobs:
+       - uses: actions/setup-node@v4
+         with:
+           node-version: 22
+-      - name: Every pushed commit carries an Agent trailer
++      - name: Every commit since the last release carries an Agent trailer
++        # From the last release tag, not github.event.before: GitHub drops a pending run when a
++        # newer one queues, and the surviving run's "before" is the dropped push's head, so the
++        # dropped push's commits were never checked (specialist.code@ finding 3b).
+         env:
+           BEFORE: ${{ github.event.before }}
+           AFTER: ${{ github.sha }}
+-        run: node scripts/check-commits.mjs "$BEFORE" "$AFTER"
++        run: |
++          last=$(git describe --tags --abbrev=0 --match "v${VERSION_BASE}.*" "$AFTER" 2>/dev/null || true)
++          node scripts/check-commits.mjs "${last:-$BEFORE}" "$AFTER"
+       - run: node scripts/build.mjs
+         env:
+           SITE_VERSION: ${{ steps.version.outputs.version }}
+diff --git a/scripts/check-commits.mjs b/scripts/check-commits.mjs
+index adadc50..3471637 100644
+--- a/scripts/check-commits.mjs
++++ b/scripts/check-commits.mjs
+@@ -5,6 +5,7 @@
+ // that added this file nor were committed after it. History is not rewritten (ACC-015).
+ // Prints OK or lists each commit that fails and exits 1.
+ import { execFileSync } from 'node:child_process';
++import { existsSync, readFileSync } from 'node:fs';
+ 
+ const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+ const tryGit = (...args) => { try { return git(...args); } catch { return null; } };
+@@ -27,11 +28,29 @@ const descendants = new Set([first, ...lines(git('rev-list', '--ancestry-path',
+ 
+ // A role may be dotted, role.speciality (Dinis, 16 Nov 2026: "we definitely should allow dots because that's our terminology").
+ const agentShape = /^[a-z0-9]+(?:[.-][a-z0-9]+)*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
++// Exemptions (specialist.code@, 2026-11-16). CI checks from the last release tag, so one failing commit
++// would block every later release, and history is never rewritten. A person may exempt that one commit in
++// scripts/commit-exemptions.json: [{ "commit": "<full 40-hex sha>", "reason": "...", "approved_by": "Dinis Cruz",
++// "date": "YYYY-MM-DD" }]. Each entry names exactly one commit; malformed entries fail the check.
++const exempt = new Map();
++const EX = 'scripts/commit-exemptions.json';
++if (existsSync(EX)) {
++  let list;
++  try { list = JSON.parse(readFileSync(EX, 'utf8')); } catch (e) { console.error(`${EX}: not JSON (${e.message})`); process.exit(1); }
++  if (!Array.isArray(list)) { console.error(`${EX}: must be a list`); process.exit(1); }
++  for (const x of list) {
++    if (!x || !/^[0-9a-f]{40}$/.test(x.commit || '') || !(x.reason || '').trim() || !(x.approved_by || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(x.date || '')) {
++      console.error(`${EX}: each entry needs a full 40-hex commit, a reason, approved_by and a date`); process.exit(1);
++    }
++    exempt.set(x.commit, x);
++  }
++}
+ const errors = [];
+-let checked = 0;
++let checked = 0, exempted = 0;
+ for (const c of added) {
+   const ct = Number(git('log', '-1', '--format=%ct', c));
+   if (!descendants.has(c) && ct < firstTime) continue;
++  if (exempt.has(c)) { exempted++; continue; }
+   checked++;
+   const agents = lines(git('log', '-1', '--format=%(trailers:key=Agent,valueonly)', c)).map((s) => s.trim());
+   const subject = git('log', '-1', '--format=%s', c);
+@@ -44,4 +63,4 @@ if (errors.length) {
+   console.error(`FAILED (${errors.length} of ${checked} commits checked)`);
+   process.exit(1);
+ }
+-console.log(`OK (${checked} commits checked, ${added.length - checked} older than the check skipped)`);
++console.log(`OK (${checked} commits checked, ${exempted} exempted, ${added.length - checked - exempted} older than the check skipped)`);
+diff --git a/scripts/release.sh b/scripts/release.sh
+index 1a26077..b379fcd 100755
+--- a/scripts/release.sh
++++ b/scripts/release.sh
+@@ -2,9 +2,15 @@
+ # Run every gate, then rebase on dev and push. Stops at the first failure. Never pipe a gate.
+ set -euo pipefail
+ cd "$(dirname "$0")/.."
++# Refuse during a hold (finding 3), with uncommitted changes (finding 4: the gates must check what is
++# pushed), and check every commit's Agent: trailer before the push, while it can still be amended (finding 5).
++[ -e board/HOLD.md ] && { echo "board/HOLD.md exists: no release while it does" >&2; exit 1; }
++[ -z "$(git status --porcelain)" ] || { echo "uncommitted changes: commit or stash them first" >&2; exit 1; }
++git fetch -q origin dev
+ node scripts/build.mjs
+ node scripts/validate.mjs
+ node scripts/leak-scan.mjs
++node scripts/check-commits.mjs origin/dev HEAD
+ for i in 1 2 3 4 5; do
+   git fetch -q origin dev
+   git rebase -q origin/dev
+@@ -12,6 +18,7 @@ for i in 1 2 3 4 5; do
+   node scripts/build.mjs >/dev/null
+   node scripts/validate.mjs >/dev/null
+   node scripts/leak-scan.mjs >/dev/null
++  node scripts/check-commits.mjs origin/dev HEAD >/dev/null
+   if git -c push.negotiate=true push -q origin HEAD:dev; then echo "released $(git rev-parse --short HEAD) to dev"; exit 0; fi
+   sleep $((i * 3))
+ done

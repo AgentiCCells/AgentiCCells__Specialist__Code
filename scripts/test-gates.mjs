@@ -58,6 +58,15 @@ const cases = [
     appendFileSync(join(d, 'README.md'), '\nx\n'); gitc(d, 'commit', '-qam', 'msg\n\nAgent: dev@AgentiCCells.dinis\n\nCo-Authored-By: x <x@x>');
     return run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status;
   }],
+  ['an exempted commit passes, a malformed exemption fails', 0, (d) => {
+    const base = gitc(d, 'rev-parse', 'HEAD').trim();
+    appendFileSync(join(d, 'README.md'), '\nx\n'); gitc(d, 'commit', '-qam', 'no trailer');
+    const bad = gitc(d, 'rev-parse', 'HEAD').trim();
+    writeFileSync(join(d, 'scripts/commit-exemptions.json'), JSON.stringify([{ commit: bad.slice(0, 7), reason: 'r', approved_by: 'p', date: '2026-11-16' }]));
+    if (run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status !== 1) return 'short sha accepted';
+    writeFileSync(join(d, 'scripts/commit-exemptions.json'), JSON.stringify([{ commit: bad, reason: 'trailer outside the final block', approved_by: 'Dinis Cruz', date: '2026-11-16' }]));
+    return run(d, 'node', ['scripts/check-commits.mjs', base, 'HEAD']).status;
+  }],
   ['release.sh refuses during a hold', 1, (d) => {
     execFileSync('mkdir', ['-p', join(d, 'board')]); writeFileSync(join(d, 'board/HOLD.md'), 'hold\n');
     return run(d, 'bash', ['scripts/release.sh']).status;
