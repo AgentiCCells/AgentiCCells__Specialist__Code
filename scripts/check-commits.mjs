@@ -25,7 +25,11 @@ const range = before ? [`${before}..${after}`] : [after];
 const added = lines(git('rev-list', '--no-merges', ...range));
 const descendants = new Set([first, ...lines(git('rev-list', '--ancestry-path', `${first}..${after}`))]);
 
-const agentShape = /^[a-z0-9][a-z0-9-]*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
+// specialist.code@ (2026-11-16): the role part may hold dots (specialist.code@, the dotted dev
+// workers), as agent names given by Dinis do; it must still start with a letter or digit and
+// may not end with a dot or hold two dots in a row. The template allowed no dot, which failed
+// every commit of an agent with a dotted name.
+const agentShape = /^[a-z0-9](?:[a-z0-9-]|\.(?=[a-z0-9]))*@agenticcells\.[a-z0-9][a-z0-9.-]*$/i;
 const errors = [];
 let checked = 0;
 for (const c of added) {
