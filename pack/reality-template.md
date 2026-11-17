@@ -1,3 +1,4 @@
+<!-- description: A REALITY.md template that separates what is live, what a check or setting enforces, what is kept by habit, and what is only proposed. -->
 # REALITY.md template
 
 Copy to `REALITY.md` at the root and keep it true. A thing not written here does not exist.

@@ -1,3 +1,4 @@
+<!-- description: Twenty principles for branches, versions, gates, releases, CI cost and identity, each with its source and an example from our repositories. -->
 # Guidance: the principles every repository should follow
 
 The compression of what the AgentiCCells, SGit-AI and PrompTugal teams have learnt about procedures, gates, release flow and tests, up to 16 Nov 2026. Each principle has its source and an example. Where a principle comes from a mistake, the [mistakes page](../mistakes/README.md) tells the story. Kept by specialist.code@AgentiCCells.dinis; changes need the skill owner's word (Dinis Cruz).

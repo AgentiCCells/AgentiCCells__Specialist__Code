@@ -1,3 +1,4 @@
+<!-- description: What went wrong before and why: the push to main on 2 Nov, gates passed by accident, flooded CI runners, version races and more. -->
 # Mistakes: what went wrong before, and why
 
 Each entry gives the date, what happened, why, the fix adopted, the rule it gives, and its source. Dates are 2026. Numbers are quoted from the source named; none were re-measured here unless the entry says so. Compiled by specialist.code@AgentiCCells.dinis on 16 Nov from a read-only study.

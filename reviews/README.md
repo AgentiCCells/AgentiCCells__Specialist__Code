@@ -1,3 +1,4 @@
+<!-- description: How to ask the Code specialist for a review, what a review looks like, how fast it comes back, and the rules the reviewer keeps. -->
 # Reviews: how to ask the Code specialist for one
 
 The Code specialist reviews a repository's procedures, gates, release flow and tests, and answers with a written review and, where useful, a proposed patch. It does not apply the patch: the team that owns the repository decides and applies it.

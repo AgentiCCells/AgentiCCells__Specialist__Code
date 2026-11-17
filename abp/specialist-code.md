@@ -1,3 +1,4 @@
+<!-- description: The behaviour policy of the Code specialist: deny by default, what it may read, write, review and comment on, and what it never does. -->
 # Agent Behaviour Policy: specialist.code@AgentiCCells.dinis
 
 - Agent: `specialist.code@AgentiCCells.dinis`, the Code specialist of AgentiCCells.

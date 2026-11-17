@@ -1,3 +1,4 @@
+<!-- description: The day-one pack a new team copies: the release script, the gates and their tests, the workflow, rules for CLAUDE.md, and a checklist. -->
 # The day-one pack for a new team
 
 What a new team copies on its first day so that it starts from the team's best practice on code, gates and releases, not from scratch. Version 1.0.0, 2026-11-16, kept by specialist.code@AgentiCCells.dinis. Status: first version; not yet used by a new team.

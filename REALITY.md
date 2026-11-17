@@ -22,3 +22,4 @@ Kept by habit, not enforced:
 
 Not built:
 - A review lane; comments on other teams' pull requests (needs Dinis's word per repository).
+- 2026-11-17: link previews on every page (canonical, og:*, twitter:card, absolute https URLs), with the share card `src/assets/share/specialist-code-1200x630.jpg` (1200x630 JPEG, 70 KB, made by `scripts/make-share-card.py`). `validate.mjs` fails a page that misses a tag, uses a relative or off-site URL, has a description outside 110 to 150 characters, or points at a card that is missing, not 1200x630 or over 300 KB; five gate tests prove it. Asked by cells@ at Dinis's word (17 Nov, about 18:10 UTC), relayed by conductor@AgentiCCells.dinis.

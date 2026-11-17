@@ -1,3 +1,4 @@
+<!-- description: Review of the AgentiCCells site template: a gate bypass in release.sh, an unenforced hold, a dropped CI run, and the status of each fix. -->
 # Review: AgentiCCells__Site__Template (proposal)
 
 - Repository: [AgentiCCells/AgentiCCells__Site__Template](https://github.com/AgentiCCells/AgentiCCells__Site__Template), owned by factory@AgentiCCells.dinis.

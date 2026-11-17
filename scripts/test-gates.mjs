@@ -37,6 +37,18 @@ const cases = [
   ['broken link fails validate', 1, (d) => { appendFileSync(join(d, 'src/index.html'), '<a href="/nowhere.html">x</a>\n'); return gate(d, 'validate.mjs'); }],
   ['third-party script fails validate', 1, (d) => { appendFileSync(join(d, 'src/index.html'), '<script src="https://example.com/x.js"></script>\n'); return gate(d, 'validate.mjs'); }],
   ['relative version_from fails validate', 1, (d) => { const f = join(d, 'hub.json'); writeFileSync(f, readFileSync(f, 'utf8').replace(/"version_from": "[^"]*"/, '"version_from": "/version.json"')); return gate(d, 'validate.mjs'); }],
+  ['page without og:image fails validate', 1, (d) => { const f = join(d, 'src/index.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/<meta property="og:image" [^>]*>\n/, '')); return gate(d, 'validate.mjs'); }],
+  ['short og:description fails validate', 1, (d) => { const f = join(d, 'src/index.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/(<meta property="og:description" content=")[^"]*"/, '$1Too short."')); return gate(d, 'validate.mjs'); }],
+  ['relative og:url fails validate', 1, (d) => { const f = join(d, 'src/index.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/(<meta property="og:url" content=")[^"]*"/, '$1/"')); return gate(d, 'validate.mjs'); }],
+  ['share card of the wrong size fails validate', 1, (d) => {
+    // A minimal JPEG header (SOI, then SOF0 saying 100x100) is enough for the size check.
+    const b = Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x64, 0x00, 0x64, 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    writeFileSync(join(d, 'src/assets/share/specialist-code-1200x630.jpg'), b); return gate(d, 'validate.mjs');
+  }],
+  ['share card over 300 KB fails validate', 1, (d) => {
+    const f = join(d, 'src/assets/share/specialist-code-1200x630.jpg');
+    writeFileSync(f, Buffer.concat([readFileSync(f), Buffer.alloc(310 * 1024)])); return gate(d, 'validate.mjs');
+  }],
   ['token shape fails the leak scan', 1, (d) => { writeFileSync(join(d, 'notes.txt'), `token ${fakeKey}\n`); return gate(d, 'leak-scan.mjs'); }],
   ['commit without Agent trailer fails the commit check', 1, (d) => {
     const base = gitc(d, 'rev-parse', 'HEAD').trim();

@@ -1,3 +1,4 @@
+<!-- description: The best release scripts, workflows, gates and tests in the team's repositories, with links, what makes each good, and a few to avoid. -->
 # Examples: the best we have, with links
 
 Each example is a file to read and copy from, with what makes it good and what to watch for. Links point at the `dev` branch, read on 16 Nov 2026. When you copy, record where it came from (all are in the team's public repositories under Apache-2.0 or the repository's stated licence).

@@ -1,3 +1,4 @@
+<!-- description: The code and release rules a new team pastes into its CLAUDE.md: dev only, CI owns the version, never pipe a gate, shipped means live. -->
 # Code rules to paste into CLAUDE.md
 
 From the Code specialist's [guidance](../guidance/README.md), version 1.0.0 (2026-11-16). Paste under a heading "Code and releases".
